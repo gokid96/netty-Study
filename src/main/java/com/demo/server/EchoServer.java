@@ -24,6 +24,10 @@ public class EchoServer {
         this.port = port;
     }
 
+    /**
+     * 서버 시작 메서드
+     * main() 메서드에서 호출됨
+     */
     public void start() throws Exception {
         // Boss 그룹: 클라이언트 연결 수락만 담당 (1개 스레드)
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
@@ -41,6 +45,10 @@ public class EchoServer {
                     .childOption(ChannelOption.TCP_NODELAY, true)   // 작은 패킷도 즉시 전송
                     .handler(new LoggingHandler(LogLevel.INFO))     // 서버 레벨 로깅 활성화
                     .childHandler(new ChannelInitializer<SocketChannel>() {
+                        /**
+                         * 새로운 클라이언트 연결이 생성될 때마다 Netty가 자동 호출하는 메서드
+                         * 각 클라이언트별로 독립적인 파이프라인을 구성함
+                         */
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             // 채널 파이프라인: 데이터 처리 체인 구성
@@ -78,16 +86,21 @@ public class EchoServer {
     public static void main(String[] args) throws Exception {
         // 명령행 인자로 포트 지정 가능, 기본값은 9090
         int port = args.length > 0 ? Integer.parseInt(args[0]) : 9090;
-        new EchoServer(port).start();
+        new EchoServer(port).start();  // start() 메서드 호출
     }
 }
 
 /**
  * 실제 메시지 처리를 담당하는 핸들러
  * Worker 스레드에서 실행됨
+ * Netty 프레임워크가 각 이벤트 발생 시점에 해당 메서드들을 자동 호출
  */
 class EchoServerHandler extends ChannelInboundHandlerAdapter {
 
+    /**
+     * 클라이언트가 서버에 연결되었을 때 Netty가 자동 호출하는 메서드
+     * 연결 성공 직후 한 번만 호출됨
+     */
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
         // 클라이언트가 연결되었을 때 호출
@@ -98,6 +111,10 @@ class EchoServerHandler extends ChannelInboundHandlerAdapter {
         ctx.writeAndFlush("서버에 연결되었습니다! 메시지를 입력하세요.\n");
     }
 
+    /**
+     * 클라이언트로부터 메시지를 받을 때마다 Netty가 자동 호출하는 메서드
+     * 메시지가 수신될 때마다 반복적으로 호출됨
+     */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         // 클라이언트로부터 메시지를 받을 때마다 호출
@@ -124,6 +141,10 @@ class EchoServerHandler extends ChannelInboundHandlerAdapter {
         ctx.writeAndFlush(echoResponse);  // 비동기로 응답 전송
     }
 
+    /**
+     * 클라이언트 연결이 종료되었을 때 Netty가 자동 호출하는 메서드
+     * 클라이언트가 연결을 끊거나 네트워크 문제로 연결이 끊어질 때 호출됨
+     */
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
         // 클라이언트 연결이 끊어졌을 때 호출
@@ -131,6 +152,10 @@ class EchoServerHandler extends ChannelInboundHandlerAdapter {
         System.out.println("클라이언트 연결 종료: " + clientAddress);
     }
 
+    /**
+     * 채널에서 예외가 발생했을 때 Netty가 자동 호출하는 메서드
+     * IOException, 인코딩 오류 등 모든 예외 상황에서 호출됨
+     */
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         // 예외 발생 시 호출
